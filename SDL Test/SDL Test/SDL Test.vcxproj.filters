@@ -40,5 +40,40 @@
     <None Include="simple.frag">
       <Filter>Resource Files</Filter>
     </None>
+    <None Include="phong-tex.vert">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="minimal.frag">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="minimal.vert">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="mvp.vert">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="phong-tex.frag">
+      <Filter>Resource Files</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="studdedmetal.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="fabric.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="paper.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="neon.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="hexGrid.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="brick.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
   </ItemGroup>
 </Project>
