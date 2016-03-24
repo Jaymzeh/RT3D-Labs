@@ -15,25 +15,39 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <stack>
 
-#define DEG_TO_RADIAN 0.017453293
+#define DEG_TO_RAD 0.017453293
 
 using namespace std;
 
 std::stack<glm::mat4> mvStack;
 
 GLuint shaderProgram;
-GLuint shaderProgram2;
-//glm::mat4 MVP;
 
-GLuint cubeVertCount = 8;
-GLfloat cubeVerts[] = { -0.25, -0.25f, -0.25f,
--0.25, 0.25f, -0.25f,
-0.25f, 0.25f, -0.25f,
-0.25f, -0.25f, -0.25f,
--0.25f, -0.25f, 0.25f,
--0.25f, 0.25f, 0.25f,
-0.25f, 0.25f, 0.25f,
-0.25f, -0.25f, 0.25f };
+GLuint cubeVertCount = 36;
+GLfloat cubeVerts[] = { 0, 0, 0, 1, 1, 0, 1, 0, 0,
+0, 0, 0, 0, 1, 0, 1, 1, 0,
+0, 0, 0, 0, 1, 1, 0, 1, 0,
+0, 0, 0, 0, 0, 1, 0, 1, 1,
+0, 1, 0, 1, 1, 1, 1, 1, 0,
+0, 1, 0, 0, 1, 1, 1, 1, 1,
+1, 0, 0, 1, 1, 0, 1, 1, 1,
+1, 0, 0, 1, 1, 1, 1, 0, 1,
+0, 0, 0, 1, 0, 0, 1, 0, 1,
+0, 0, 0, 1, 0, 1, 0, 0, 1,
+0, 0, 1, 1, 0, 1, 1, 1, 1,
+0, 0, 1, 1, 1, 1, 0, 1, 1
+};
+
+GLfloat cubeNorms[] = { 0, 0, -1,       0, 0, -1,       0, 0, -1,       0, 0, -1,       0, 0, -1,
+0, 0, -1,       -1, 0, 0,       -1, 0, 0,       -1, 0, 0,       -1, 0, 0,
+-1, 0, 0,       -1, 0, 0,       0, 1, 0,        0, 1, 0,        0, 1, 0,
+0, 1, 0,        0, 1, 0,        0, 1, 0,        1, 0, 0,        1, 0, 0,
+1, 0, 0,        1, 0, 0,        1, 0, 0,        1, 0, 0,        0, -1, 0,
+0, -1, 0,       0, -1, 0,       0, -1, 0,       0, -1, 0,       0, -1, 0,
+0, 0, 1,        0, 0, 1,        0, 0, 1,        0, 0, 1,        0, 0, 1,
+0, 0, 1
+};
+
 GLfloat cubeColours[] = { 0.0f, 0.0f, 0.0f,
 0.0f, 1.0f, 0.0f,
 1.0f, 1.0f, 0.0f,
@@ -44,37 +58,28 @@ GLfloat cubeColours[] = { 0.0f, 0.0f, 0.0f,
 1.0f, 0.0f, 1.0f };
 
 GLuint cubeIndexCount = 36;
-GLuint cubeIndices[] = { 0,1,2, 0,2,3, // back  
-1,0,5, 0,4,5, // left					
-6,3,2, 3,6,7, // right
-1,5,6, 1,6,2, // top
-0,3,4, 3,7,4, // bottom
-6,5,4, 7,6,4 }; // front
+GLuint cubeIndices[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22
+, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35
+}; // front
 
 
 GLuint meshObjects[1];
 GLuint textures[6];
 
-GLfloat cubeTexCoords[] = { 0.0f, 0.0f,
-0.0f, 1.0f,
-1.0f, 1.0f,
-1.0f, 0.0f,
-1.0f, 1.0f,
-1.0f, 0.0f,
-0.0f, 0.0f,
-0.0f, 1.0f };
+GLfloat cubeTexCoords[] = { 0, 0,   1, 1,   1, 0,   0, 0,   0, 1,   1, 1,   0, 0,   1, 1,   1, 0,   0, 0,
+0, 1,   1, 1,   0, 0,   1, 1,   1, 0,   0, 0,   0, 1,   1, 1,   0, 0,   0, 1,
+1, 1,   0, 0,   1, 1,   1, 0,   0, 0,   1, 0,   1, 1,   0, 0,   1, 1,   0, 1,
+0, 0,   1, 0,   1, 1,   0, 0,   1, 1,   0, 1
+};
 
-
+glm::vec4 lightPos;
 
 GLfloat dx = 0.0f;
 GLfloat dy = 0.0f;
+GLfloat dz = 0.0f;
 GLfloat rot = 0.0f;
 
-GLfloat scale = 3.0f;
-
-GLfloat red = 1.0f;
-GLfloat green = 1.0f;
-GLfloat blue = 1.0f;
+GLfloat scale = 1.0f;
 
 rt3d::lightStruct light0 = {
 	{ 0.2f, 0.2f, 0.2f, 1.0f }, // ambient
@@ -111,7 +116,9 @@ rt3d::materialStruct blueMat = {
 	2.0f  // shininess
 };
 
-
+glm::vec3 eye{ 0.0f,1.0f,4.0f };
+glm::vec3 at{ 0.0f ,1.0f ,3.0f };
+glm::vec3 up(0.0f, 1.0f, 0.0f);
 
 // Set up rendering context
 SDL_Window * setupRC(SDL_GLContext &context) {
@@ -184,7 +191,6 @@ GLuint loadBitmap(char *fname) {
 void init(void) {
 	// For this simple example we'll be using the most basic of shader programs
 	shaderProgram = rt3d::initShaders("phong-tex.vert", "phong-tex.frag");
-	shaderProgram2 = rt3d::initShaders("phong.vert", "phong.frag");
 
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_BLEND);
@@ -201,44 +207,33 @@ void init(void) {
 	textures[4] = loadBitmap("hexGrid.bmp");
 	textures[5] = loadBitmap("neon.bmp");
 
-	meshObjects[0] = rt3d::createMesh(cubeVertCount, cubeVerts, nullptr, cubeVerts, cubeTexCoords, cubeIndexCount, cubeIndices);
+	meshObjects[0] = rt3d::createMesh(cubeVertCount, cubeVerts, nullptr, cubeNorms, cubeTexCoords, cubeIndexCount, cubeIndices);
+
+	lightPos = glm::vec4(1.0f);
 }
+
+glm::vec3 moveForward(glm::vec3 cam, GLfloat angle, GLfloat d) {
+	return glm::vec3(cam.x + d*std::sin(angle*DEG_TO_RAD),
+		cam.y, cam.z - d*std::cos(angle*DEG_TO_RAD));
+}
+
+glm::vec3 moveRight(glm::vec3 pos, GLfloat angle, GLfloat d) {
+	return glm::vec3(pos.x + d*std::cos(angle*DEG_TO_RAD),
+		pos.y, pos.z + d*std::sin(angle*DEG_TO_RAD));
+}
+
 
 void update() {
 	const Uint8 *keys = SDL_GetKeyboardState(NULL);
 
-	/*if (keys[SDL_SCANCODE_R]) {
-		dx = dy = 0;
-		rot = 0;
-		sx = sy = sz = 1;
-	}*/
-	//postion
-	if (keys[SDL_SCANCODE_W]) dy += 0.1;
-	if (keys[SDL_SCANCODE_S]) dy -= 0.1;
-
-	if (keys[SDL_SCANCODE_D]) dx += 0.1;
-	if (keys[SDL_SCANCODE_A]) dx -= 0.1;
-
-	//scale
-	if (keys[SDL_SCANCODE_UP]) scale += 0.1;
-	if (keys[SDL_SCANCODE_DOWN]) scale -= 0.1;
-
-	//rotation
-	if (keys[SDL_SCANCODE_T]) rot += 0.2;
-	if (keys[SDL_SCANCODE_Y]) rot -= 0.2;
-
-
-	if (keys[SDL_SCANCODE_R]) red += 0.05;
-	if (red > 1.0f)
-		red = 0.0f;
-
-	if (keys[SDL_SCANCODE_G]) green += 0.05;
-	if (green > 1.0f)
-		green = 0.0f;
-
-	if (keys[SDL_SCANCODE_B]) blue += 0.05;
-	if (blue > 1.0f)
-		blue = 0.0f;
+	if (keys[SDL_SCANCODE_W]) eye = moveForward(eye, rot, 0.1f);
+	if (keys[SDL_SCANCODE_S]) eye = moveForward(eye, rot, -0.1f);
+	if (keys[SDL_SCANCODE_A]) eye = moveRight(eye, rot, -0.1f);
+	if (keys[SDL_SCANCODE_D]) eye = moveRight(eye, rot, 0.1f);
+	if (keys[SDL_SCANCODE_R]) eye.y += 0.1;
+	if (keys[SDL_SCANCODE_F]) eye.y -= 0.1;
+	if (keys[SDL_SCANCODE_COMMA]) rot -= 1.0f;
+	if (keys[SDL_SCANCODE_PERIOD]) rot += 1.0f;
 }
 
 void draw(SDL_Window * window) {
@@ -248,89 +243,62 @@ void draw(SDL_Window * window) {
 
 	glUseProgram(shaderProgram);
 	
-
-	rt3d::setLight(shaderProgram, light0);
 	rt3d::setMaterial(shaderProgram, whiteMat);
 	// set up projection
 	glm::mat4 projection(1.0);
-	glm::mat4 modelview(1.0);
-	projection = glm::perspective(float(60.0f*DEG_TO_RADIAN), 800.0f / 600.0f, 1.0f, 50.0f);
+	projection = glm::perspective(float(60.0f*DEG_TO_RAD), 800.0f / 600.0f, 1.0f, 50.0f);
 	rt3d::setUniformMatrix4fv(shaderProgram, "projection", glm::value_ptr(projection));
 
-#pragma region cubeArray
+	// set base position for scene
+	glm::mat4 modelview(1.0);
+	mvStack.push(modelview);
 
-	//render solid cubes
-	glDepthMask(GL_TRUE);
+	at = moveForward(eye, rot, 1.0f);
+	mvStack.top() = glm::lookAt(eye, at, up);
 
-	rt3d::setMaterial(shaderProgram, blueMat);
+	glm::vec4 tmp = mvStack.top()*lightPos;
+	rt3d::setLight(shaderProgram, light0);
+	rt3d::setLightPos(shaderProgram, glm::value_ptr(tmp));
+	
+
+	mvStack.top() = glm::rotate(mvStack.top(), float(rot*DEG_TO_RAD), glm::vec3(0.0f, 1.0f, 0.0f));
+	mvStack.top() = glm::translate(mvStack.top(), glm::vec3(dx, dy, dz));
+	mvStack.top() = glm::lookAt(eye, at, up);
+	
+	// draw a cube for ground plane
 	glBindTexture(GL_TEXTURE_2D, textures[0]);
-	mvStack.push(modelview); // push modelview to stack
-	mvStack.top() = glm::translate(mvStack.top(), glm::vec3(-2.0f, 1.0f, -12.0f));
-	mvStack.top() = glm::rotate(mvStack.top(), float(45 * DEG_TO_RADIAN), glm::vec3(0.0f, 1.0f, 0.0f));
-	mvStack.top() = glm::scale(mvStack.top(), glm::vec3(scale, scale, scale));
+	mvStack.push(mvStack.top());
+	mvStack.top() = glm::translate(mvStack.top(), glm::vec3(-5.0f, -0.1f, -5.0f));
+	mvStack.top() = glm::scale(mvStack.top(), glm::vec3(20.0f, 0.1f, 20.0f));
 	rt3d::setUniformMatrix4fv(shaderProgram, "modelview", glm::value_ptr(mvStack.top()));
-	rt3d::drawIndexedMesh(meshObjects[0], cubeIndexCount, GL_TRIANGLES);
-	mvStack.pop();
-
 	rt3d::setMaterial(shaderProgram, whiteMat);
-	glBindTexture(GL_TEXTURE_2D, textures[0]);
-	mvStack.push(modelview); // push modelview to stack
-	mvStack.top() = glm::translate(mvStack.top(), glm::vec3(2.0f, -1.0f, -12.0f));
-	mvStack.top() = glm::rotate(mvStack.top(), float(45 * DEG_TO_RADIAN), glm::vec3(0.0f, 1.0f, 0.0f));
-	mvStack.top() = glm::scale(mvStack.top(), glm::vec3(scale, scale, scale));
-	rt3d::setUniformMatrix4fv(shaderProgram, "modelview", glm::value_ptr(mvStack.top()));
 	rt3d::drawIndexedMesh(meshObjects[0], cubeIndexCount, GL_TRIANGLES);
 	mvStack.pop();
 
-	//render transparent cubes
-	glDepthMask(GL_FALSE);
-
-	rt3d::setMaterial(shaderProgram, redMat);
-	glBindTexture(GL_TEXTURE_2D, textures[0]);
-	
-	mvStack.push(modelview); // push modelview to stack
-	mvStack.top() = glm::translate(mvStack.top(), glm::vec3(-2.0f, 1.0f, -4.0f));
-	mvStack.top() = glm::rotate(mvStack.top(), float(45*DEG_TO_RADIAN), glm::vec3(0.0f, 1.0f, 0.0f));
-	mvStack.top() = glm::scale(mvStack.top(), glm::vec3(scale, scale, scale));
-	rt3d::setUniformMatrix4fv(shaderProgram, "modelview", glm::value_ptr(mvStack.top()));
-	rt3d::drawIndexedMesh(meshObjects[0], cubeIndexCount, GL_TRIANGLES);
-	mvStack.pop();
-
-	rt3d::setMaterial(shaderProgram, greenMat);
+	// Cubes for buildings Different texture & individual material properties & positions
 	glBindTexture(GL_TEXTURE_2D, textures[1]);
-	mvStack.push(modelview); // push modelview to stack
-	mvStack.top() = glm::translate(mvStack.top(), glm::vec3(-2.0f, 1.0f, -8.0f));
-	mvStack.top() = glm::rotate(mvStack.top(), float(45*DEG_TO_RADIAN), glm::vec3(0.0f, 1.0f, 0.0f));
-	mvStack.top() = glm::scale(mvStack.top(), glm::vec3(scale, scale, scale));
-	rt3d::setUniformMatrix4fv(shaderProgram, "modelview", glm::value_ptr(mvStack.top()));
-	rt3d::drawIndexedMesh(meshObjects[0], cubeIndexCount, GL_TRIANGLES);
-	mvStack.pop();
+	rt3d::materialStruct tmpMaterial = whiteMat;
+	for (int a = 0; a<4; a++) {
+		for (int b = 0; b<4; b++) {
+			tmpMaterial.ambient[0] = a * 0.33f;
+			tmpMaterial.ambient[1] = b * 0.33f;
+			tmpMaterial.diffuse[0] = a * 0.33f;
+			tmpMaterial.diffuse[1] = b * 0.33f;
+			tmpMaterial.specular[0] = a * 0.33f;
+			tmpMaterial.specular[1] = b * 0.33f;
+			rt3d::setMaterial(shaderProgram, tmpMaterial);
+			mvStack.push(mvStack.top());
+			mvStack.top() = glm::translate(mvStack.top(),
+				glm::vec3(a*3.0f, 0.0f, b*3.0f));
+			mvStack.top() = glm::scale(mvStack.top(),
+				glm::vec3(1.0f, 1.0f*(a + 0.1f), scale));
+			rt3d::setUniformMatrix4fv(shaderProgram, "modelview",
+				glm::value_ptr(mvStack.top()));
+			rt3d::drawIndexedMesh(meshObjects[0], cubeIndexCount, GL_TRIANGLES);
+			mvStack.pop();
+		}
+	}
 
-	rt3d::setMaterial(shaderProgram, redMat);
-	glBindTexture(GL_TEXTURE_2D, textures[0]);
-	mvStack.push(modelview); // push modelview to stack
-	mvStack.top() = glm::translate(mvStack.top(), glm::vec3(2.0f, -1.0f, -4.0f));
-	mvStack.top() = glm::rotate(mvStack.top(), float(45 * DEG_TO_RADIAN), glm::vec3(0.0f, 1.0f, 0.0f));
-	mvStack.top() = glm::scale(mvStack.top(), glm::vec3(scale, scale, scale));
-	rt3d::setUniformMatrix4fv(shaderProgram, "modelview", glm::value_ptr(mvStack.top()));
-	rt3d::drawIndexedMesh(meshObjects[0], cubeIndexCount, GL_TRIANGLES);
-	mvStack.pop();
-
-	rt3d::setMaterial(shaderProgram, greenMat);
-	glBindTexture(GL_TEXTURE_2D, textures[1]);
-	mvStack.push(modelview); // push modelview to stack
-	mvStack.top() = glm::translate(mvStack.top(), glm::vec3(2.0f, -1.0f, -8.0f));
-	mvStack.top() = glm::rotate(mvStack.top(), float(45 * DEG_TO_RADIAN), glm::vec3(0.0f, 1.0f, 0.0f));
-	mvStack.top() = glm::scale(mvStack.top(), glm::vec3(scale, scale, scale));
-	rt3d::setUniformMatrix4fv(shaderProgram, "modelview", glm::value_ptr(mvStack.top()));
-	rt3d::drawIndexedMesh(meshObjects[0], cubeIndexCount, GL_TRIANGLES);
-	mvStack.pop();
-
-
-	
-
-#pragma endregion cubeArray
-	glDepthMask(GL_TRUE);
 	SDL_GL_SwapWindow(window); // swap buffers
 }
 

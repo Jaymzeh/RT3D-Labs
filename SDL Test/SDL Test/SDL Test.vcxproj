@@ -84,6 +84,7 @@
     <ClCompile Include="rt3d.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="mesh.h" />
     <ClInclude Include="rt3d.h" />
   </ItemGroup>
   <ItemGroup>
