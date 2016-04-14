@@ -81,6 +81,8 @@ GLfloat rot = 0.0f;
 
 GLfloat scale = 1.0f;
 
+GLuint skybox[5];
+
 rt3d::lightStruct light0 = {
 	{ 0.2f, 0.2f, 0.2f, 1.0f }, // ambient
 	{ 0.7f, 0.7f, 0.7f, 1.0f }, // diffuse
@@ -116,6 +118,7 @@ rt3d::materialStruct blueMat = {
 	2.0f  // shininess
 };
 
+glm::vec3 playerPos{ 0.0f, 0.0f, 0.0f };
 glm::vec3 eye{ 0.0f,1.0f,4.0f };
 glm::vec3 at{ 0.0f ,1.0f ,3.0f };
 glm::vec3 up(0.0f, 1.0f, 0.0f);
@@ -226,10 +229,10 @@ glm::vec3 moveRight(glm::vec3 pos, GLfloat angle, GLfloat d) {
 void update() {
 	const Uint8 *keys = SDL_GetKeyboardState(NULL);
 
-	if (keys[SDL_SCANCODE_W]) eye = moveForward(eye, rot, 0.1f);
-	if (keys[SDL_SCANCODE_S]) eye = moveForward(eye, rot, -0.1f);
-	if (keys[SDL_SCANCODE_A]) eye = moveRight(eye, rot, -0.1f);
-	if (keys[SDL_SCANCODE_D]) eye = moveRight(eye, rot, 0.1f);
+	if (keys[SDL_SCANCODE_W]) playerPos = moveForward(playerPos, rot, 0.1f);
+	if (keys[SDL_SCANCODE_S]) playerPos = moveForward(playerPos, rot, -0.1f);
+	if (keys[SDL_SCANCODE_A]) playerPos = moveRight(playerPos, rot, -0.1f);
+	if (keys[SDL_SCANCODE_D]) playerPos = moveRight(playerPos, rot, 0.1f);
 	if (keys[SDL_SCANCODE_R]) eye.y += 0.1;
 	if (keys[SDL_SCANCODE_F]) eye.y -= 0.1;
 	if (keys[SDL_SCANCODE_COMMA]) rot -= 1.0f;
@@ -253,17 +256,27 @@ void draw(SDL_Window * window) {
 	glm::mat4 modelview(1.0);
 	mvStack.push(modelview);
 
-	at = moveForward(eye, rot, 1.0f);
+	//1st person
+	//at = moveForward(eye, rot, 1.0f);
+	//mvStack.top() = glm::lookAt(eye, at, up);
+
+	//3rd person
+	eye = playerPos;
+	at = playerPos;
+	eye = moveForward(at, rot, -6.0f);
+	eye.y = at.y + 3.0f;
 	mvStack.top() = glm::lookAt(eye, at, up);
 
-	glm::vec4 tmp = mvStack.top()*lightPos;
+
+	glm::vec4 tmp = mvStack.top() * lightPos;
 	rt3d::setLight(shaderProgram, light0);
 	rt3d::setLightPos(shaderProgram, glm::value_ptr(tmp));
 	
 
-	mvStack.top() = glm::rotate(mvStack.top(), float(rot*DEG_TO_RAD), glm::vec3(0.0f, 1.0f, 0.0f));
+	/*mvStack.top() = glm::rotate(mvStack.top(), float(rot*DEG_TO_RAD), glm::vec3(0.0f, 1.0f, 0.0f));
 	mvStack.top() = glm::translate(mvStack.top(), glm::vec3(dx, dy, dz));
-	mvStack.top() = glm::lookAt(eye, at, up);
+	mvStack.top() = glm::lookAt(eye, at, up);*/
+
 	
 	// draw a cube for ground plane
 	glBindTexture(GL_TEXTURE_2D, textures[0]);
@@ -298,6 +311,16 @@ void draw(SDL_Window * window) {
 			mvStack.pop();
 		}
 	}
+
+	glBindTexture(GL_TEXTURE_2D, textures[1]);
+	mvStack.push(mvStack.top());
+	mvStack.top() = glm::translate(mvStack.top(), playerPos);
+	mvStack.top() = glm::scale(mvStack.top(), glm::vec3(1.0f, 1.0f, 1.0f));
+	mvStack.top() = glm::rotate(mvStack.top(), -float(rot * DEG_TO_RAD), glm::vec3(0.0f, 1.0f, 0.0f));
+	rt3d::setUniformMatrix4fv(shaderProgram, "modelview", glm::value_ptr(mvStack.top()));
+	rt3d::setMaterial(shaderProgram, whiteMat);
+	rt3d::drawIndexedMesh(meshObjects[0], cubeIndexCount, GL_TRIANGLES);
+	mvStack.pop();
 
 	SDL_GL_SwapWindow(window); // swap buffers
 }
